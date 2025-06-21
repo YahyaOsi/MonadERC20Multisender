@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monad Multisender by YahyaOsi</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Ethers.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            scroll-behavior: smooth;
+            background-color: #000000;
+        }
+        .loading-spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid #fff;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        pre {
+            background-color: #111827; /* gray-900 */
+            color: #d1d5db; /* gray-300 */
+            padding: 1rem;
+            border-radius: 0.5rem;
+            border: 1px solid #374151; /* gray-700 */
+            overflow-x: auto;
+        }
+        code {
+            font-family: 'Courier New', Courier, monospace;
+        }
+        .step-number {
+            background-color: #8b5cf6; /* violet-500 */
+            color: white;
+            border-radius: 50%;
+            width: 2rem;
+            height: 2rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+    </style>
+</head>
+<body class="bg-black text-white min-h-screen flex flex-col items-center p-4">
+
+    <header class="text-center my-8">
+        <h1 class="text-4xl font-bold text-white">Monad Multisender</h1>
+        <p class="text-purple-400">by YahyaOsi</p>
+    </header>
+
+    <div class="w-full max-w-4xl space-y-8">
+        
+        <!-- Instructions Section -->
+        <div id="instructions" class="bg-gray-900 rounded-2xl shadow-lg p-6 md:p-8 border border-purple-800/50">
+            <h2 class="text-2xl font-bold text-center mb-4 text-purple-400">How to Use This Tool</h2>
+            
+            <p class="text-center text-gray-400 mb-6">This tool requires you to deploy a smart contract first. Follow these steps carefully.</p>
+            
+            <div class="space-y-6">
+                <!-- Step 1 -->
+                <div class="flex items-start space-x-4">
+                    <div class="step-number">1</div>
+                    <div>
+                        <h3 class="font-bold text-lg text-white">Deploy the Smart Contract</h3>
+                        <ol class="list-decimal list-inside mt-2 space-y-2 text-gray-400">
+                            <li>Go to <a href="https://remix.ethereum.org/" target="_blank" class="text-purple-400 hover:underline">Remix IDE</a>.</li>
+                            <li>Create a new file named `ERC20Multisender.sol`.</li>
+                            <li>Copy the code below and paste it into the file.</li>
+                            <li>From the "Solidity Compiler" tab, click "Compile".</li>
+                            <li>From the "Deploy & Run" tab, select `Injected Provider - MetaMask` and ensure you are on the Monad Testnet.</li>
+                            <li>Click "Deploy" and approve the transaction in MetaMask.</li>
+                            <li>After deployment, copy the **Deployed Contract Address** to use in the tool below.</li>
+                        </ol>
+                    </div>
+                </div>
+
+                <!-- Code Block -->
+                <div>
+                    <h4 class="font-semibold mb-2 text-center">Smart Contract Code (ERC20Multisender.sol)</h4>
+                    <pre><code id="solidity-code">// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.3/contracts/token/ERC20/IERC20.sol";
+
+contract ERC20Multisender {
+    event TokensDispersed(address indexed token, uint256 totalAmount);
+
+    function disperseToken(
+        address tokenAddress,
+        address[] calldata recipients,
+        uint256[] calldata amounts
+    ) external {
+        require(recipients.length == amounts.length, "Arrays must be equal length.");
+        require(recipients.length > 0, "Must have at least one recipient.");
+
+        IERC20 token = IERC20(tokenAddress);
+        uint256 totalAmount = 0;
+        for (uint i = 0; i < amounts.length; i++) {
+            totalAmount += amounts[i];
+        }
+
+        token.transferFrom(msg.sender, address(this), totalAmount);
+
+        for (uint i = 0; i < recipients.length; i++) {
+            token.transfer(recipients[i], amounts[i]);
+        }
+
+        emit TokensDispersed(tokenAddress, totalAmount);
+    }
+}</code></pre>
+                </div>
+                 <!-- Step 2 -->
+                <div class="flex items-start space-x-4">
+                    <div class="step-number">2</div>
+                    <div>
+                        <h3 class="font-bold text-lg text-white">Use the DApp</h3>
+                        <p class="text-gray-300">Now that you have the contract address, you can use the tool below.</p>
+                         <ol class="list-decimal list-inside mt-2 space-y-2 text-gray-400">
+                             <li>Click "Connect Wallet" and ensure you're on the Monad network.</li>
+                             <li>Paste your copied **Contract Address** into the "Multisender Contract Address" field.</li>
+                             <li>Fill out the other fields and execute the "Approve" and then "Disperse" transactions.</li>
+                         </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Application -->
+        <div id="app-main" class="w-full max-w-2xl mx-auto bg-gray-900 rounded-2xl shadow-lg p-6 md:p-8 space-y-6 border border-purple-800/50">
+            
+            <div class="text-center">
+                <h1 class="text-2xl md:text-3xl font-bold text-purple-400">Multisender DApp</h1>
+            </div>
+
+            <div id="connect-container" class="text-center">
+                <button id="connectWalletBtn" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg transition-transform transform hover:scale-105 shadow-lg">
+                    Connect Wallet
+                </button>
+                <p id="installMetaMask" class="text-red-400 mt-2 hidden">Please install MetaMask to continue.</p>
+            </div>
+
+            <div id="app-container" class="hidden space-y-6">
+                
+                <div id="connection-status" class="bg-black/50 p-3 rounded-lg text-center">
+                    <p class="text-sm text-gray-400">Connected Account:</p>
+                    <p id="walletAddress" class="font-mono text-sm break-all text-green-400"></p>
+                    <p id="networkStatus" class="text-sm mt-1"></p>
+                </div>
+                
+                <div>
+                    <h3 class="text-lg font-semibold mb-2 text-purple-300">Step 1: Contract Addresses</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label for="multisenderContractAddress" class="block text-sm font-medium text-gray-300 mb-1">Multisender Contract Address (from Remix)</label>
+                            <input type="text" id="multisenderContractAddress" class="w-full bg-black border border-gray-700 rounded-lg p-2.5 text-white focus:ring-purple-500 focus:border-purple-500 font-mono" placeholder="0x... (paste your deployed contract address here)">
+                        </div>
+                        <div>
+                            <label for="tokenContractAddress" class="block text-sm font-medium text-gray-300 mb-1">ERC20 Token Contract Address</label>
+                            <input type="text" id="tokenContractAddress" class="w-full bg-black border border-gray-700 rounded-lg p-2.5 text-white focus:ring-purple-500 focus:border-purple-500 font-mono" placeholder="0x...">
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="text-lg font-semibold mb-2 text-purple-300">Step 2: Recipients & Amounts</h3>
+                    <p class="text-sm text-gray-400 mb-2">Enter each recipient on a new line with the format: `address,amount`</p>
+                    <textarea id="recipientsData" rows="8" class="w-full bg-black border border-gray-700 rounded-lg p-2.5 text-white focus:ring-purple-500 focus:border-purple-500 font-mono" placeholder="0x123...,100&#10;0x456...,25.5&#10;0x789...,500"></textarea>
+                    <div class="text-left mt-2">
+                        <button id="fillExample" class="text-xs text-purple-400 hover:underline">Fill Example</button>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="text-lg font-semibold mb-2 text-purple-300">Step 3: Execute</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <button id="approveBtn" class="w-full flex items-center justify-center bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-lg transition disabled:bg-gray-800 disabled:cursor-not-allowed">
+                            <span class="btn-text">1. Approve</span>
+                            <div class="loading-spinner hidden ml-2"></div>
+                        </button>
+                        <button id="sendBtn" class="w-full flex items-center justify-center bg-violet-600 hover:bg-violet-700 text-white font-bold py-3 px-4 rounded-lg transition disabled:bg-gray-800 disabled:cursor-not-allowed">
+                            <span class="btn-text">2. Disperse</span>
+                            <div class="loading-spinner hidden ml-2"></div>
+                        </button>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="text-lg font-semibold mb-2 text-purple-300">Transaction Log</h3>
+                    <div id="log" class="bg-black/70 p-4 rounded-lg h-32 overflow-y-auto border border-gray-700 text-sm font-mono">
+                        <p class="text-gray-500">Log messages will appear here...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer class="mt-8 text-center text-gray-500 text-sm">
+            <p>Made with 💜 by <a href="https://x.com/YahyaOsi" target="_blank" rel="noopener noreferrer" class="text-purple-400 hover:underline">@YahyaOsi</a></p>
+        </footer>
+    </div>
+
+    <script>
+        const connectWalletBtn = document.getElementById('connectWalletBtn');
+        const installMetaMask = document.getElementById('installMetaMask');
+        const connectContainer = document.getElementById('connect-container');
+        const appContainer = document.getElementById('app-container');
+        const walletAddressEl = document.getElementById('walletAddress');
+        const networkStatusEl = document.getElementById('networkStatus');
+        const multisenderContractAddressInput = document.getElementById('multisenderContractAddress');
+        const tokenContractAddressInput = document.getElementById('tokenContractAddress');
+        const recipientsDataInput = document.getElementById('recipientsData');
+        const approveBtn = document.getElementById('approveBtn');
+        const sendBtn = document.getElementById('sendBtn');
+        const logEl = document.getElementById('log');
+        const fillExampleBtn = document.getElementById('fillExample');
+
+        const MONAD_TESTNET_CHAIN_ID = '0x279f'; // 10143
+        const MONAD_TESTNET_INFO = {
+            chainId: MONAD_TESTNET_CHAIN_ID,
+            chainName: 'Monad Testnet',
+            nativeCurrency: { name: 'MON', symbol: 'MON', decimals: 18 },
+            rpcUrls: ['https://testnet-rpc.monad.xyz/'],
+            blockExplorerUrls: ['https://testnet.monadexplorer.com/'],
+        };
+        const MIN_MULTISENDER_ABI = ["function disperseToken(address tokenAddress, address[] calldata recipients, uint256[] calldata amounts)"];
+        const MIN_ERC20_ABI = ["function approve(address spender, uint256 amount) returns (bool)", "function decimals() view returns (uint8)", "function allowance(address owner, address spender) view returns (uint256)", "function symbol() view returns (string)"];
+
+        let provider, signer, userAddress;
+
+        function log(message, isError = false) {
+            const timestamp = new Date().toLocaleTimeString();
+            const p = document.createElement('p');
+            p.innerHTML = `<span class="text-gray-500">${timestamp}:</span> ${message}`;
+            p.classList.add(isError ? 'text-red-400' : 'text-green-300');
+            if (logEl.children.length === 1 && logEl.children[0].textContent.startsWith("Log messages")) {
+                logEl.innerHTML = '';
+            }
+            logEl.appendChild(p);
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+
+        async function connectWallet() {
+            if (typeof window.ethereum === 'undefined') {
+                installMetaMask.classList.remove('hidden');
+                return;
+            }
+            try {
+                log('Requesting wallet connection...');
+                provider = new ethers.providers.Web3Provider(window.ethereum);
+                await provider.send("eth_requestAccounts", []);
+                signer = provider.getSigner();
+                userAddress = await signer.getAddress();
+                
+                connectContainer.classList.add('hidden');
+                appContainer.classList.remove('hidden');
+                walletAddressEl.textContent = userAddress;
+                
+                log('Successfully connected!');
+                await checkAndSwitchNetwork();
+            } catch (error) {
+                console.error("Connection failed:", error);
+                let userFriendlyError = '';
+                if (error.code === 4001) {
+                    userFriendlyError = "You rejected the connection request in your wallet.";
+                } else {
+                    userFriendlyError = `${error.message}<br><strong class='text-yellow-300 mt-2 block'>Hint: Are you running this from a web server (http://)? Wallets like MetaMask may not work when opening a local file directly (file://).</strong>`;
+                }
+                log(`Connection Failed: ${userFriendlyError}`, true);
+            }
+        }
+
+        async function checkAndSwitchNetwork() {
+            try {
+                const network = await provider.getNetwork();
+                if (network.chainId !== parseInt(MONAD_TESTNET_CHAIN_ID, 16)) {
+                    networkStatusEl.innerHTML = `<span class="text-yellow-400">Wrong Network. Please switch to Monad Testnet.</span> <button id="switchBtn" class="text-purple-400 hover:underline ml-2">Switch</button>`;
+                    document.getElementById('switchBtn').addEventListener('click', switchNetwork);
+                } else {
+                    networkStatusEl.innerHTML = `<span class="text-green-400">Correctly connected to Monad Testnet.</span>`;
+                }
+            } catch (error) {
+                 log(`Failed to check network: ${error.message}`, true);
+            }
+        }
+
+        async function switchNetwork() {
+            try {
+                await window.ethereum.request({
+                    method: 'wallet_switchEthereumChain',
+                    params: [{ chainId: MONAD_TESTNET_CHAIN_ID }],
+                });
+            } catch (switchError) {
+                if (switchError.code === 4902) {
+                    try {
+                        await window.ethereum.request({
+                            method: 'wallet_addEthereumChain',
+                            params: [MONAD_TESTNET_INFO],
+                        });
+                    } catch (addError) {
+                        log('Failed to add Monad Testnet to MetaMask.', true);
+                    }
+                } else {
+                    log('User rejected the network switch request.', true);
+                }
+            }
+        }
+
+        function parseRecipientsData() {
+            const data = recipientsDataInput.value.trim();
+            if (!data) throw new Error("Recipients list is empty.");
+            const lines = data.split('\n');
+            const recipients = [], amounts = [];
+            for(const line of lines) {
+                if (line.trim() === '') continue;
+                const parts = line.split(',').map(p => p.trim());
+                if (parts.length !== 2) throw new Error(`Invalid format on line: "${line}"`);
+                const [address, amountStr] = parts;
+                if (!ethers.utils.isAddress(address)) throw new Error(`Invalid address: ${address}`);
+                if (isNaN(parseFloat(amountStr)) || parseFloat(amountStr) <= 0) throw new Error(`Invalid amount: ${amountStr}`);
+                recipients.push(address);
+                amounts.push(amountStr);
+            }
+            return { recipients, amounts };
+        }
+        
+        function setButtonLoading(button, isLoading) {
+            const text = button.querySelector('.btn-text');
+            const spinner = button.querySelector('.loading-spinner');
+            button.disabled = isLoading;
+            text.style.display = isLoading ? 'none' : 'inline';
+            spinner.style.display = isLoading ? 'block' : 'none';
+        }
+
+        async function handleApprove() {
+            setButtonLoading(approveBtn, true);
+            try {
+                const multisenderAddress = multisenderContractAddressInput.value;
+                const tokenAddress = tokenContractAddressInput.value;
+                if (!ethers.utils.isAddress(multisenderAddress) || !ethers.utils.isAddress(tokenAddress)) throw new Error("Please enter valid contract addresses.");
+
+                const { amounts } = parseRecipientsData();
+                const tokenContract = new ethers.Contract(tokenAddress, MIN_ERC20_ABI, signer);
+                const decimals = await tokenContract.decimals();
+                const symbol = await tokenContract.symbol();
+                
+                let totalAmount = ethers.BigNumber.from(0);
+                for (const amountStr of amounts) {
+                    totalAmount = totalAmount.add(ethers.utils.parseUnits(amountStr, decimals));
+                }
+
+                log(`Total: ${ethers.utils.formatUnits(totalAmount, decimals)} ${symbol}. Requesting approval...`);
+                const tx = await tokenContract.approve(multisenderAddress, totalAmount);
+                log(`Approval transaction sent. <a href="${MONAD_TESTNET_INFO.blockExplorerUrls[0]}/tx/${tx.hash}" target="_blank" class="text-purple-400 hover:underline">View Transaction</a>`);
+                await tx.wait();
+                log('Approval transaction confirmed successfully!');
+            } catch (err) {
+                log(`Approval Error: ${err.reason || err.message}`, true);
+            } finally {
+                setButtonLoading(approveBtn, false);
+            }
+        }
+
+        async function handleDisperse() {
+            setButtonLoading(sendBtn, true);
+             try {
+                const multisenderAddress = multisenderContractAddressInput.value;
+                const tokenAddress = tokenContractAddressInput.value;
+                if (!ethers.utils.isAddress(multisenderAddress) || !ethers.utils.isAddress(tokenAddress)) throw new Error("Please enter valid contract addresses.");
+
+                const { recipients, amounts: amountsStr } = parseRecipientsData();
+                const tokenContract = new ethers.Contract(tokenAddress, MIN_ERC20_ABI, signer);
+                const decimals = await tokenContract.decimals();
+                const amountsInWei = amountsStr.map(a => ethers.utils.parseUnits(a, decimals));
+                const totalAmountInWei = amountsInWei.reduce((a, b) => a.add(b), ethers.BigNumber.from(0));
+
+                log(`Checking allowance...`);
+                const allowance = await tokenContract.allowance(userAddress, multisenderAddress);
+                if (allowance.lt(totalAmountInWei)) throw new Error(`Allowance is not sufficient. Please run 'Approve' first.`);
+                
+                log('Allowance is sufficient. Dispersing tokens...');
+                const multisenderContract = new ethers.Contract(multisenderAddress, MIN_MULTISENDER_ABI, signer);
+                const tx = await multisenderContract.disperseToken(tokenAddress, recipients, amountsInWei, { gasLimit: ethers.BigNumber.from(recipients.length * 60000) });
+                log(`Disperse transaction sent. <a href="${MONAD_TESTNET_INFO.blockExplorerUrls[0]}/tx/${tx.hash}" target="_blank" class="text-purple-400 hover:underline">View Transaction</a>`);
+                await tx.wait();
+                log('🎉 Disperse successful! Tokens have been sent.', false);
+            } catch (err) {
+                log(`Disperse Error: ${err.reason || err.message}`, true);
+            } finally {
+                setButtonLoading(sendBtn, false);
+            }
+        }
+
+        connectWalletBtn.addEventListener('click', connectWallet);
+        approveBtn.addEventListener('click', handleApprove);
+        sendBtn.addEventListener('click', handleDisperse);
+        fillExampleBtn.addEventListener('click', () => {
+            recipientsDataInput.value = '0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B,10\n0xdC25EF3F5B8a186998338A2ADA83795F52eAF183,2.5';
+            log('Filled with example data.');
+        });
+        
+        window.addEventListener('load', () => {
+            if (window.ethereum && window.ethereum.selectedAddress) {
+                connectWallet();
+            }
+        });
+
+        if (window.ethereum) {
+            window.ethereum.on('accountsChanged', () => location.reload());
+            window.ethereum.on('chainChanged', () => location.reload());
+        }
+
+    </script>
+</body>
+</html>
